@@ -59,6 +59,7 @@ let latestCurrencyRequest = 0;
 let currentExchangeRates = null;
 let currentRatesBase = '';
 let currentRatesUpdatedAt = '';
+let currencyRequestInProgress = false;
 
 const tarotCards = [
     { title: '태양', symbol: '☀️', message: '밝은 에너지가 주변으로 퍼지는 날이에요. 자신 있게 한 걸음 내디뎌 보세요.' },
@@ -81,6 +82,9 @@ function showPage(pageName) {
             link.removeAttribute('aria-current');
         }
     });
+    if (pageName === 'home' && !currencyRequestInProgress && currentRatesBase !== currencyBase.value) {
+        loadCurrencyRates();
+    }
 }
 
 pageLinks.forEach((link) => {
@@ -312,6 +316,7 @@ function renderCurrencyResult() {
 async function loadCurrencyRates() {
     const requestId = ++latestCurrencyRequest;
     const base = currencyBase.value;
+    currencyRequestInProgress = true;
     currencyOutput.classList.remove('currency-error');
     currencyOutput.textContent = '환율을 불러오는 중…';
     currencyRate.textContent = '';
@@ -328,6 +333,7 @@ async function loadCurrencyRates() {
 
         currentExchangeRates = data.rates;
         currentRatesBase = base;
+        currencyRequestInProgress = false;
         const updatedAt = new Date(data.time_last_update_utc);
         currentRatesUpdatedAt = ` · 기준 ${new Intl.DateTimeFormat('ko-KR', {
             year: 'numeric',
@@ -342,6 +348,7 @@ async function loadCurrencyRates() {
     } catch (error) {
         console.error('환율 정보를 불러오지 못했습니다.', error);
         if (requestId === latestCurrencyRequest) {
+            currencyRequestInProgress = false;
             currencyOutput.classList.add('currency-error');
             currencyOutput.textContent = '환율 조회에 실패했어요. 잠시 후 다시 시도해 주세요.';
         }
@@ -442,7 +449,6 @@ guestbookForm.addEventListener('submit', (event) => {
     }
 
     renderEntries();
-    loadCurrencyRates();
     guestbookForm.reset();
 });
 
